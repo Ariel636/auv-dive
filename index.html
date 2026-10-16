@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AUV Option C Dive</title>
+<meta name="description" content="Interactive underwater 3D model of a low-cost 6-DOF AUV (Nazarbayev University capstone). Drive it and watch the moving-mass pitch and roll mechanism.">
+<meta property="og:title" content="AUV Option C Dive">
+<meta property="og:description" content="Drive a low-cost 6-DOF AUV underwater. Nazarbayev University capstone.">
+<meta name="robots" content="noai, noimageai">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%2306202b%27/%3E%3Cellipse cx=%2716%27 cy=%2717%27 rx=%2711%27 ry=%276%27 fill=%27%23f6cd48%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@400;500;600&display=swap">
+<style>*{box-sizing:border-box}html,body{margin:0}body{font-size:14px}[hidden]{display:none!important}</style>
+</head>
+<body oncontextmenu="return false">
+<style>
+:root{
+  color-scheme: dark;
+  --abyss:#03141c; --panel:rgba(3,20,28,.58); --panel-solid:#06202b; --line:rgba(150,222,214,.18); --line-hi:rgba(150,222,214,.42);
+  --fg:#d9f2ec; --dim:#86aeaa; --faint:#4f7774; --hull:#f6cd48; --hull-dim:#a88a2c; --warm:#ffd877; --cold:#7fe3d8;
+  --key:#0b2d38; --key-hi:#14485a; --ink:#021016;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+}
+html,body{background:var(--abyss);color:var(--fg);height:100%;overflow:hidden}
+body{font-family:var(--sans);-webkit-font-smoothing:antialiased;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#app{position:fixed;inset:0;overflow:hidden;background:var(--abyss);touch-action:none;user-select:none;-webkit-user-select:none}
+canvas#c{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none;cursor:grab}
+canvas#c:active{cursor:grabbing}
+.ui{position:absolute;pointer-events:none}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;backdrop-filter:blur(8px) saturate(1.2);-webkit-backdrop-filter:blur(8px) saturate(1.2);box-shadow:0 6px 24px rgba(0,0,0,.25)}
+/* brand */
+#brand{top:calc(env(safe-area-inset-top,0px) + 14px);left:max(16px,env(safe-area-inset-left,0px));display:flex;gap:10px;align-items:center;padding:7px 12px 7px 9px}
+#brand .tag{font:600 11px/1 var(--mono);color:var(--ink);background:var(--hull);border-radius:5px;padding:5px 6px;letter-spacing:.06em}
+#brand .t{display:flex;flex-direction:column;gap:2px}
+#brand b{font:600 13px/1.1 var(--sans);letter-spacing:.02em}
+#brand small{font:400 10.5px/1.1 var(--mono);color:var(--dim);letter-spacing:.03em}
+/* HUD */
+#hud{top:calc(env(safe-area-inset-top,0px) + 14px);right:max(16px,env(safe-area-inset-right,0px));width:252px;padding:10px 12px 11px}
+.hh{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.hh span{font:600 10px/1 var(--mono);letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+.hh i{font-style:normal;font:500 10px/1 var(--mono);color:var(--faint)}
+.row{display:grid;grid-template-columns:52px 1fr 76px;align-items:center;gap:6px;height:19px}
+.row .k{font:500 10.5px/1 var(--mono);letter-spacing:.08em;color:var(--dim)}
+.row .k em{font-style:normal;color:var(--faint);margin-left:3px}
+.row .v{font:500 12px/1 var(--mono);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--fg)}
+.bar{position:relative;height:5px;border-radius:3px;background:rgba(150,222,214,.10);overflow:hidden}
+.bar::after{content:"";position:absolute;left:50%;top:-1px;bottom:-1px;width:1px;background:var(--line-hi)}
+.bar b{position:absolute;top:0;bottom:0;left:50%;width:0;background:var(--cold);border-radius:3px}
+.row.lit .v{color:var(--warm)} .row.lit .bar b{background:var(--warm)}
+.sep{height:1px;background:var(--line);margin:7px 0 6px}
+.att{display:flex;gap:10px;align-items:center;margin-top:2px}
+.att svg{flex:0 0 auto}
+.act{flex:1;display:grid;gap:4px}
+.act .row{grid-template-columns:44px 1fr 46px;height:16px}
+.act .row .v{font-size:11px}
+/* controls */
+#keys{left:max(16px,env(safe-area-inset-left,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 14px);padding:10px 12px;display:grid;grid-template-columns:auto auto;gap:5px 12px;align-items:center}
+#keys .ks{display:flex;gap:3px}
+kbd{display:inline-grid;place-items:center;min-width:21px;height:21px;padding:0 5px;border-radius:5px;background:var(--key);border:1px solid var(--line-hi);border-bottom-width:2px;font:600 11px/1 var(--mono);color:var(--fg);transition:background .08s,color .08s,transform .08s}
+kbd.on{background:var(--hull);color:var(--ink);border-color:var(--hull);transform:translateY(1px)}
+#keys span.l{font:500 12px/1 var(--sans);color:var(--dim);letter-spacing:.02em}
+#keys span.l b{color:var(--fg);font-weight:500}
+#keys .mouse{grid-column:1/-1;font:400 11px/1.2 var(--mono);color:var(--faint);margin-top:3px}
+/* demo chip */
+#demo{left:50%;transform:translateX(-50%);white-space:nowrap;top:calc(env(safe-area-inset-top,0px) + 14px);padding:6px 12px;font:500 11px/1 var(--mono);color:var(--dim);letter-spacing:.06em;display:flex;gap:8px;align-items:center;transition:opacity .4s}
+#demo i{width:7px;height:7px;border-radius:50%;background:var(--warm);box-shadow:0 0 10px var(--warm);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+#demo.off{opacity:0}
+/* touch pads */
+#pads{left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 12px);display:none;justify-content:space-between;align-items:flex-end;gap:10px}
+.pad{pointer-events:auto;display:grid;grid-template-columns:repeat(3,46px);grid-template-rows:repeat(3,46px);gap:4px;padding:6px;position:relative}
+.pad button{all:unset;display:grid;place-items:center;border-radius:9px;background:var(--key);border:1px solid var(--line-hi);color:var(--fg);font:600 15px/1 var(--mono);touch-action:none}
+.pad button.on{background:var(--hull);color:var(--ink)}
+.pad .cap{grid-column:2;grid-row:2;display:grid;place-items:center;font:600 9.5px/1.15 var(--mono);color:var(--faint);text-align:center;letter-spacing:.06em}
+.mid{pointer-events:auto;display:flex;flex-direction:column;gap:6px;padding:6px}
+.mid button{all:unset;display:grid;place-items:center;height:34px;padding:0 10px;border-radius:8px;background:var(--key);border:1px solid var(--line-hi);color:var(--fg);font:600 10.5px/1 var(--mono);letter-spacing:.08em}
+.mid button.on{background:var(--hull);color:var(--ink)}
+#nogl{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--dim);font:500 14px/1.5 var(--sans);padding:24px}
+@media (pointer:coarse), (max-width:620px){
+  #keys{display:none} #pads{display:flex}
+  #hud{width:186px;padding:8px 10px 9px}
+  .row{grid-template-columns:44px 1fr 54px;height:17px} .row .v{font-size:11px}
+  .act .row{grid-template-columns:38px 1fr 40px}
+  #brand small{display:none}
+  #demo{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 186px)}
+}
+@media (max-width:440px){
+  #hud .bar{display:none} .row{grid-template-columns:auto 1fr;height:15px} .act .row{grid-template-columns:auto 1fr;height:14px}
+  .row .k em{display:none} .row .v,.act .row .v{font-size:10.5px}
+  #hud{width:142px;padding:7px 9px 8px} .sep{margin:5px 0 4px}
+  .att{gap:6px} .att svg{width:40px;height:40px}
+  #brand .t{display:none} #brand{padding:6px}
+  #pads{gap:6px}
+  .pad{grid-template-columns:repeat(3,36px);grid-template-rows:repeat(3,36px);gap:3px;padding:5px}
+  .pad .cap{font-size:8px}
+  .mid{padding:5px;gap:5px} .mid button{height:30px;padding:0 7px;font-size:9.5px}
+  #demo{font-size:10px;white-space:nowrap}
+}
+</style>
+
+<div id="app">
+  <canvas id="c" tabindex="0" aria-label="Underwater view of the AUV. Drive it with the keyboard or the on-screen pads."></canvas>
+
+  <div id="brand" class="ui card"><span class="tag">AUV·C</span><span class="t"><b>Low-cost 6-DOF AUV</b><small>7.50 kg · 490 × 280 mm · BG 14.9 mm</small></span></div>
+
+  <div id="hud" class="ui card">
+    <div class="hh"><span>6 DOF</span><i id="clock">t 0.0 s</i></div>
+    <div class="row" id="r-u"><span class="k">SURGE<em>u</em></span><span class="bar"><b></b></span><span class="v">0.00 m/s</span></div>
+    <div class="row" id="r-v"><span class="k">SWAY<em>v</em></span><span class="bar"><b></b></span><span class="v">0.00 m/s</span></div>
+    <div class="row" id="r-w"><span class="k">HEAVE<em>z</em></span><span class="bar"><b></b></span><span class="v">2.60 m</span></div>
+    <div class="row" id="r-p"><span class="k">ROLL<em>φ</em></span><span class="bar"><b></b></span><span class="v">0.0°</span></div>
+    <div class="row" id="r-q"><span class="k">PITCH<em>θ</em></span><span class="bar"><b></b></span><span class="v">0.0°</span></div>
+    <div class="row" id="r-r"><span class="k">YAW<em>ψ</em></span><span class="bar"><b></b></span><span class="v">000°</span></div>
+    <div class="sep"></div>
+    <div class="att">
+      <svg id="ai" width="58" height="58" viewBox="-30 -30 60 60" aria-hidden="true">
+        <defs><clipPath id="aic"><circle r="26"/></clipPath></defs>
+        <g clip-path="url(#aic)"><g id="aih"><rect x="-60" y="-90" width="120" height="90" fill="#1b5f6c"/><rect x="-60" y="0" width="120" height="90" fill="#06222b"/>
+          <line x1="-60" y1="0" x2="60" y2="0" stroke="#cfeee8" stroke-width="1"/>
+          <g stroke="#86aeaa" stroke-width=".7"><line x1="-6" y1="-10" x2="6" y2="-10"/><line x1="-6" y1="10" x2="6" y2="10"/><line x1="-10" y1="-20" x2="10" y2="-20"/><line x1="-10" y1="20" x2="10" y2="20"/></g></g></g>
+        <circle r="26" fill="none" stroke="rgba(150,222,214,.42)"/>
+        <path d="M-15 0h8l3 4 3-4h8" fill="none" stroke="#f6cd48" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle r="1.6" fill="#f6cd48"/>
+      </svg>
+      <div class="act">
+        <div class="row" id="a-tp"><span class="k">PORT</span><span class="bar"><b></b></span><span class="v">0%</span></div>
+        <div class="row" id="a-ts"><span class="k">STBD</span><span class="bar"><b></b></span><span class="v">0%</span></div>
+        <div class="row" id="a-xp"><span class="k">m·PITCH</span><span class="bar"><b></b></span><span class="v">0 mm</span></div>
+        <div class="row" id="a-yr"><span class="k">m·ROLL</span><span class="bar"><b></b></span><span class="v">0 mm</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="demo" class="ui card off"><i></i><span id="demo-t">demo · press any key to drive</span></div>
+
+  <div id="keys" class="ui card">
+    <span class="ks"><kbd data-k="KeyW">W</kbd><kbd data-k="KeyS">S</kbd></span><span class="l"><b>thrust</b> forward / back</span>
+    <span class="ks"><kbd data-k="KeyA">A</kbd><kbd data-k="KeyD">D</kbd></span><span class="l"><b>yaw</b> port / starboard</span>
+    <span class="ks"><kbd data-k="ArrowUp">↑</kbd><kbd data-k="ArrowDown">↓</kbd></span><span class="l"><b>pitch mass</b> dive / climb</span>
+    <span class="ks"><kbd data-k="ArrowLeft">←</kbd><kbd data-k="ArrowRight">→</kbd></span><span class="l"><b>roll mass</b> port / starboard</span>
+    <span class="ks"><kbd data-k="KeyH">H</kbd><kbd data-k="KeyC">C</kbd><kbd data-k="KeyR">R</kbd></span><span class="l"><b>hatch</b> · current · reset</span>
+    <span class="mouse">drag to orbit · scroll to zoom</span>
+  </div>
+
+  <div id="pads" class="ui">
+    <div class="pad card" aria-label="thrust and yaw">
+      <button data-k="KeyW" style="grid-column:2;grid-row:1">▲</button>
+      <button data-k="KeyA" style="grid-column:1;grid-row:2">◀</button>
+      <span class="cap">THRUST<br>YAW</span>
+      <button data-k="KeyD" style="grid-column:3;grid-row:2">▶</button>
+      <button data-k="KeyS" style="grid-column:2;grid-row:3">▼</button>
+    </div>
+    <div class="mid card">
+      <button data-k="KeyH" id="b-h">HATCH</button>
+      <button data-k="KeyC" id="b-c">CURRENT</button>
+      <button data-k="KeyR">RESET</button>
+    </div>
+    <div class="pad card" aria-label="moving masses">
+      <button data-k="ArrowUp" style="grid-column:2;grid-row:1">▲</button>
+      <button data-k="ArrowLeft" style="grid-column:1;grid-row:2">◀</button>
+      <span class="cap">PITCH<br>ROLL<br>MASS</span>
+      <button data-k="ArrowRight" style="grid-column:3;grid-row:2">▶</button>
+      <button data-k="ArrowDown" style="grid-column:2;grid-row:3">▼</button>
+    </div>
+  </div>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
