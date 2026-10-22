@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>AUV Option C Dive</title>
-<meta name="description" content="Interactive underwater 3D model of a low-cost 6-DOF AUV (Nazarbayev University capstone). Drive it and watch the moving-mass pitch and roll mechanism.">
-<meta property="og:title" content="AUV Option C Dive">
+<title>AUV Design D Dive</title>
+<meta name="description" content="Interactive underwater 3D model of a low-cost 6-DOF AUV (Nazarbayev University capstone). Drive it, watch the moving-mass pitch and roll and the magnetic-coupling thrusters, and meet the sharks.">
+<meta property="og:title" content="AUV Design D Dive">
 <meta property="og:description" content="Drive a low-cost 6-DOF AUV underwater. Nazarbayev University capstone.">
 <meta name="robots" content="noai, noimageai">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%2306202b%27/%3E%3Cellipse cx=%2716%27 cy=%2717%27 rx=%2711%27 ry=%276%27 fill=%27%23f6cd48%27/%3E%3C/svg%3E">
@@ -48,6 +48,7 @@ canvas#c:active{cursor:grabbing}
 .bar{position:relative;height:5px;border-radius:3px;background:rgba(150,222,214,.10);overflow:hidden}
 .bar::after{content:"";position:absolute;left:50%;top:-1px;bottom:-1px;width:1px;background:var(--line-hi)}
 .bar b{position:absolute;top:0;bottom:0;left:50%;width:0;background:var(--cold);border-radius:3px}
+#r-e{grid-template-columns:52px 1fr 96px}
 .row.lit .v{color:var(--warm)} .row.lit .bar b{background:var(--warm)}
 .sep{height:1px;background:var(--line);margin:7px 0 6px}
 .att{display:flex;gap:10px;align-items:center;margin-top:2px}
@@ -83,6 +84,7 @@ kbd.on{background:var(--hull);color:var(--ink);border-color:var(--hull);transfor
   #hud{width:186px;padding:8px 10px 9px}
   .row{grid-template-columns:44px 1fr 54px;height:17px} .row .v{font-size:11px}
   .act .row{grid-template-columns:38px 1fr 40px}
+  #r-e{grid-template-columns:44px 1fr 70px} #r-e .v{font-size:10px}
   #brand small{display:none}
   #demo{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 186px)}
 }
@@ -103,7 +105,7 @@ kbd.on{background:var(--hull);color:var(--ink);border-color:var(--hull);transfor
 <div id="app">
   <canvas id="c" tabindex="0" aria-label="Underwater view of the AUV. Drive it with the keyboard or the on-screen pads."></canvas>
 
-  <div id="brand" class="ui card"><span class="tag">AUV·C</span><span class="t"><b>Low-cost 6-DOF AUV</b><small>7.50 kg · 490 × 280 mm · BG 14.9 mm</small></span></div>
+  <div id="brand" class="ui card"><span class="tag">AUV·D</span><span class="t"><b>Low-cost 6-DOF AUV · Design D</b><small>2.25 kg · 300 × 177 mm · BG 6.4 mm · 30 m tether</small></span></div>
 
   <div id="hud" class="ui card">
     <div class="hh"><span>6 DOF</span><i id="clock">t 0.0 s</i></div>
@@ -113,6 +115,7 @@ kbd.on{background:var(--hull);color:var(--ink);border-color:var(--hull);transfor
     <div class="row" id="r-p"><span class="k">ROLL<em>φ</em></span><span class="bar"><b></b></span><span class="v">0.0°</span></div>
     <div class="row" id="r-q"><span class="k">PITCH<em>θ</em></span><span class="bar"><b></b></span><span class="v">0.0°</span></div>
     <div class="row" id="r-r"><span class="k">YAW<em>ψ</em></span><span class="bar"><b></b></span><span class="v">000°</span></div>
+    <div class="row" id="r-e"><span class="k">POWER<em>P</em></span><span class="bar"><b></b></span><span class="v">10 W · 6.9 h</span></div>
     <div class="sep"></div>
     <div class="att">
       <svg id="ai" width="58" height="58" viewBox="-30 -30 60 60" aria-hidden="true">
@@ -140,8 +143,8 @@ kbd.on{background:var(--hull);color:var(--ink);border-color:var(--hull);transfor
     <span class="ks"><kbd data-k="KeyA">A</kbd><kbd data-k="KeyD">D</kbd></span><span class="l"><b>yaw</b> port / starboard</span>
     <span class="ks"><kbd data-k="ArrowUp">↑</kbd><kbd data-k="ArrowDown">↓</kbd></span><span class="l"><b>pitch mass</b> dive / climb</span>
     <span class="ks"><kbd data-k="ArrowLeft">←</kbd><kbd data-k="ArrowRight">→</kbd></span><span class="l"><b>roll mass</b> port / starboard</span>
-    <span class="ks"><kbd data-k="KeyH">H</kbd><kbd data-k="KeyC">C</kbd><kbd data-k="KeyR">R</kbd></span><span class="l"><b>hatch</b> · current · reset</span>
-    <span class="mouse">drag to orbit · scroll to zoom</span>
+    <span class="ks"><kbd data-k="KeyH">H</kbd><kbd data-k="KeyC">C</kbd><kbd data-k="KeyR">R</kbd><kbd data-k="KeyM">M</kbd></span><span class="l"><b>hatch</b> · current · reset · sound</span>
+    <span class="mouse">drag to orbit · scroll to zoom · sound starts on first click</span>
   </div>
 
   <div id="pads" class="ui">
@@ -156,6 +159,7 @@ kbd.on{background:var(--hull);color:var(--ink);border-color:var(--hull);transfor
       <button data-k="KeyH" id="b-h">HATCH</button>
       <button data-k="KeyC" id="b-c">CURRENT</button>
       <button data-k="KeyR">RESET</button>
+      <button data-k="KeyM" id="b-m">SOUND</button>
     </div>
     <div class="pad card" aria-label="moving masses">
       <button data-k="ArrowUp" style="grid-column:2;grid-row:1">▲</button>
